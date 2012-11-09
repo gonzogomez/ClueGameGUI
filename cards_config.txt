@@ -1,0 +1,21 @@
+Miss Scarlet,PERSON
+Mr. Green,PERSON
+Mrs. Peacock,PERSON
+Colonel Mustard,PERSON
+Mrs. White,PERSON
+Professor Plum,PERSON
+Kitchen,ROOM
+Lounge,ROOM
+Conservatory,ROOM
+Study,ROOM
+Billiard Room,ROOM
+Dining Room,ROOM
+Ballroom,ROOM
+Hall,ROOM
+Library,ROOM
+Candlestick,WEAPON
+Lead Pipe,WEAPON
+Rope,WEAPON
+Knife,WEAPON
+Revolver,WEAPON
+Wrench,WEAPON
