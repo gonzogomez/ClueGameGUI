@@ -1,5 +1,6 @@
 package clueGame;
 
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -9,23 +10,32 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 
+@SuppressWarnings("serial")
 public class ClueGameGUI extends JFrame {
 	private DetectiveNotes notes;
 	private JMenuItem exit;
 	private JMenuItem dNotes;
 	private Board board;
+	private PlayerDisplay pd;
+	private GameControlPanel gcp;
 	
 	public ClueGameGUI(){
 		super();
 		board = new Board();
-		notes = new DetectiveNotes();
+		notes = new DetectiveNotes(board.getCards());
+		pd = new PlayerDisplay();
+		gcp = new GameControlPanel();
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setSize(new Dimension(825, 880));
+		setSize(new Dimension(815, 850));
 		setTitle("Clue Game");
 		JMenuBar menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
 		menuBar.add(createFileMenu());
-		add(board);
+		setLayout(new BorderLayout());
+		add(board, BorderLayout.CENTER);
+		add(pd, BorderLayout.EAST);
+		add(gcp, BorderLayout.SOUTH);
+		
 	}
 	
 	private JMenu createFileMenu()
