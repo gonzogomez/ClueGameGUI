@@ -94,7 +94,7 @@ public class GameSetupTests {
 	public void testDealing(){
 		HashSet<Card> deck = new HashSet<Card>();
 		ArrayList<String> cardlist = new ArrayList<String>();
-		board.deal(cardlist);
+		board.deal();
 		
 		//Test that all the cards were dealt
 		for(Card c: board.getHumanPlayer().getMyCards()){

@@ -9,6 +9,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 
 @SuppressWarnings("serial")
 public class ClueGameGUI extends JFrame {
@@ -23,8 +24,8 @@ public class ClueGameGUI extends JFrame {
 		super();
 		board = new Board();
 		notes = new DetectiveNotes(board.getCards());
-		pd = new PlayerDisplay();
-		gcp = new GameControlPanel();
+		pd = new PlayerDisplay(board.getHumanPlayer());
+		gcp = new GameControlPanel(board);
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setSize(new Dimension(815, 850));
 		setTitle("Clue Game");
@@ -78,6 +79,7 @@ public class ClueGameGUI extends JFrame {
 	public static void main(String[] args) {
 		ClueGameGUI clueBoard = new ClueGameGUI();
 		clueBoard.setVisible(true);
+		JOptionPane.showMessageDialog(clueBoard, "You are Miss Scarlet, press Next Player to begin play.", "Welcome to Clue", JOptionPane.INFORMATION_MESSAGE);
 
 	}
 

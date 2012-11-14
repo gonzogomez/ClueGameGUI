@@ -1,6 +1,9 @@
 package clueGame;
 
+import java.awt.Color;
 import java.awt.Graphics;
+import java.util.ArrayList;
+import java.util.Set;
 
 import clueGame.RoomCell.DoorDirection;
 
@@ -20,6 +23,13 @@ public abstract class BoardCell {
 
 	public boolean isDoorway( ) { //10/21
 		return false;
+	}
+	
+	public void drawHighlight(Graphics g){
+		g.setColor(Color.white);
+		g.fillRect(getColumn()*SIZE, getRow()*SIZE, SIZE, SIZE);
+		g.setColor(Color.black);
+		g.drawRect(getColumn()*SIZE, getRow()*SIZE, SIZE, SIZE);
 	}
 	
 	public abstract void draw(Graphics g);
@@ -49,6 +59,4 @@ public abstract class BoardCell {
 	public void setColumn(int column) {
 		this.column = column;
 	}
-	
-	//TODO Add abstract method called draw
 }

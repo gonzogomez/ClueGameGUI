@@ -2,10 +2,13 @@ package clueGame;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -15,11 +18,14 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
+import clueGame.Card.CardType;
+import clueGame.GameControlPanel.SuggestionDialog;
 import clueGame.RoomCell.DoorDirection;
 
-public class Board extends JPanel {
+public class Board extends JPanel implements MouseListener {
 	
 	//Variables
 	private ArrayList<BoardCell> cells;
@@ -34,6 +40,7 @@ public class Board extends JPanel {
 	private RoomCell roomTemp;
 	private BoardCell boardcell;
 	private ArrayList<Card> cards;
+	private ArrayList<Card> cardListTest;
 	private ArrayList<ComputerPlayer> computerPlayers;
 	private HumanPlayer humanPlayer;
 	private Solution solution;
@@ -41,7 +48,8 @@ public class Board extends JPanel {
 	private int numPeople;
 	private int numRooms;
 	private int numWeapons;
-
+	private static final int SIZE = 30;
+	
 	//Constructor - Calls loadConfigFiles() method.
 	public Board() {
 		adjMtx = new HashMap<Integer, LinkedList<Integer>>();
@@ -51,9 +59,14 @@ public class Board extends JPanel {
 		humanPlayer = new HumanPlayer();
 		computerPlayers = new ArrayList<ComputerPlayer>();
 		cards = new ArrayList<Card>();
+		cardListTest = new ArrayList<Card>();
+		whoseTurn = null;
+		solution = new Solution(null, null, null);
 		loadConfigFiles();
 		boardSize = numRows*numColumns;
 		calcAdjacencies();
+		deal();
+		addMouseListener(this);
 	}
 
 	//Takes path of the legend and CSV file and calls their helper functions.
@@ -76,7 +89,6 @@ public class Board extends JPanel {
 		}
 	}
 
-
 	//Iterates through the legend and loads the Initial and Room Name for each room into a HashMap called rooms.
 	private void loadLegend(String fname) throws BadConfigFormatException, FileNotFoundException {
 		String inString = null;
@@ -93,8 +105,9 @@ public class Board extends JPanel {
 			initial = inString.charAt(0);  //do a toupper
 			//if second char is not a comma, throw exception
 			if(!(inString.charAt(1) == ',')){
+				in.close();
 				throw new BadConfigFormatException("comma bad");
-				}
+			}
 
 			name = inString.substring(START_NAME);
 			//System.out.println("Char: " + initial + " name: " + name);
@@ -212,7 +225,6 @@ public class Board extends JPanel {
 		return  boardcell;
 	}
 //***************************************************************************
-	
 //* IntBoard Code ***********************************************************
 	
 	//Calculates the adjacency lists for each grid space.
@@ -340,38 +352,72 @@ public class Board extends JPanel {
 		}
 		return color;
 	}
-	public void selectAnswer(){
-
-	}
 	
-	public void deal(ArrayList<String> cardlist){
-		if(cardlist.size() < cards.size()){
-			Random rand = new Random();
-			int number = rand.nextInt(cards.size());
-			if(!cardlist.contains(cards.get(number).getName())){
-				if(humanPlayer.getMyCards().size() < 3){
-					if(cards.get(number).getCardType() == Card.CardType.PERSON && !humanPlayer.getMyCards().contains(Card.CardType.PERSON)){
-						humanPlayer.getMyCards().add(cards.get(number));
-						cardlist.add(cards.get(number).getName());
-					}
-					if(cards.get(number).getCardType() == Card.CardType.ROOM && !humanPlayer.getMyCards().contains(Card.CardType.ROOM)){
-						humanPlayer.getMyCards().add(cards.get(number));
-						cardlist.add(cards.get(number).getName());
-					}
-					if(cards.get(number).getCardType() == Card.CardType.WEAPON && !humanPlayer.getMyCards().contains(Card.CardType.WEAPON)){
-						humanPlayer.getMyCards().add(cards.get(number));
-						cardlist.add(cards.get(number).getName());
-					}
+	public void selectAnswer(ArrayList<Card> anyCardList) {
+		int solutionCount = 0;
+		boolean needPersonCard = true; boolean needRoomCard = true; boolean needWeaponCard = true;
+
+		while(solutionCount < 3) {
+			for(int i = 0; i < anyCardList.size(); i++) {
+				if(needPersonCard && (anyCardList.get(i).getCardType() == CardType.PERSON)) {
+					solution.setPerson(anyCardList.get(i).getName());
+					anyCardList.remove(i);
+					needPersonCard = false;
+					solutionCount++;
 				}
-				for(ComputerPlayer p: computerPlayers){
-					if(!cardlist.contains(cards.get(number).getName()) && p.getMyCards().size() < 4){
-						p.getMyCards().add(cards.get(number));
-						cardlist.add(cards.get(number).getName());
-					}
-					number = rand.nextInt(cards.size());
+				if(needRoomCard && (anyCardList.get(i).getCardType() == CardType.ROOM)) {
+					solution.setRoom(anyCardList.get(i).getName());
+					anyCardList.remove(i);
+					needRoomCard = false;
+					solutionCount++;
+				}
+				if(needWeaponCard && (anyCardList.get(i).getCardType() == CardType.WEAPON)) {
+					solution.setWeapon(anyCardList.get(i).getName());
+					anyCardList.remove(i);
+					needWeaponCard = false;
+					solutionCount++;
 				}
 			}
-			deal(cardlist);
+		}
+	}
+	
+	//Shuffles cards, Picks the solution, and deals remaining cards in deck.
+	public void deal() {
+		boolean needPersonCard = true; 
+		boolean needRoomCard = true; 
+		boolean needWeaponCard = true;
+		cardListTest = copy(cards);
+		//Shuffles cards
+		Collections.shuffle(cardListTest);
+
+		//Calls helper method to select the solution and removes those three cards from deck.
+		selectAnswer(cardListTest);
+		
+		while(needPersonCard || needRoomCard || needWeaponCard) {
+			Collections.shuffle(cardListTest);
+			if (needPersonCard && cardListTest.get(0).getCardType() == CardType.PERSON) {
+				humanPlayer.getMyCards().add(cardListTest.get(0));
+				cardListTest.remove(0);
+				needPersonCard = false;
+			}
+			else if (needRoomCard && cardListTest.get(0).getCardType() == CardType.ROOM) {
+				humanPlayer.getMyCards().add(cardListTest.get(0));
+				cardListTest.remove(0);
+				needRoomCard = false;
+			} 
+			else if (needWeaponCard && cardListTest.get(0).getCardType() == CardType.WEAPON) {
+				humanPlayer.getMyCards().add(cardListTest.get(0));
+				cardListTest.remove(0);
+				needWeaponCard = false;
+			} 
+		}
+		
+		//Deals remaining cards to rest of players.
+		while(cardListTest.size() > 0) {
+			for(int i = 0; i < numPeople; i++) {
+				getPlayerList().get(i).getMyCards().add(cardListTest.remove(0));
+				if(cardListTest.size() == 0) break;
+			}
 		}
 	}
 
@@ -407,33 +453,59 @@ public class Board extends JPanel {
 				}	
 			}
 		}
+		
+		//Updates computer players seen cards.
+		for (ComputerPlayer cp : computerPlayers) {
+			cp.updateSeen(card);
+		}
 		return card;
 	}
-//Draws the board
+
+	//Draws the board
 	public void paintComponent(Graphics g) {
 		ArrayList<Player> players = new ArrayList<Player>();
+		
+		//Add human player and computer players to a single arraylist
 		for (Player cp : computerPlayers) {
 			players.add(cp);
 		}
 		players.add(humanPlayer);
+		
 		super.paintComponent(g);
+		
+		//Draws all the board cells
 		for(BoardCell c: cells){
 			c.draw(g);
 		}
+		
+		//Draws doorways
 		for(BoardCell c: cells){
 			if(c.isRoom()){
 				RoomCell rc = (RoomCell) c;
 				rc.drawName(g);
 			}
 		}
+		
+		//Draws player circles
 		for(Player p : players) {
 			p.draw(g);
+		}
+		//This draws the possible human targets
+		//We aren't sure why we have to make sure it is the first computer players turn, but
+		//that's the only way it works.
+		if (whoseTurn == players.get(0) && !humanPlayer.isTurnFinished()) {
+			highlight(g);
+		}
+	}
+
+	// Highlights target locations
+	public void highlight(Graphics g){
+		for(BoardCell b : targets){
+			b.drawHighlight(g);
 		}
 	}
 	
 //*Getters and Setters***********************************************************
-	
-	
 	public ArrayList<BoardCell> getCells() {
 		return cells;
 	}
@@ -479,7 +551,7 @@ public class Board extends JPanel {
 	}
 
 	public ArrayList<Card> getCards() {
-		return cards;
+		return this.cards;
 	}
 
 	public void setCards(ArrayList<Card> cards) {
@@ -529,6 +601,82 @@ public class Board extends JPanel {
 	public void setNumColumns(int numColumns) {
 		this.numColumns = numColumns;
 	}
+	
+	public ArrayList<Player> getPlayerList() {
+		ArrayList<Player> players = new ArrayList<Player>();
+		for (Player cp : computerPlayers) {
+			players.add(cp);
+		}
+		players.add(humanPlayer);
+		return players;
+	}
+	
+	public static <t> ArrayList<t> copy(ArrayList<t> list) {
+		ArrayList<t> temp = new ArrayList<t>();
+		for(t temp1 : list) {
+			temp.add(temp1);
+		}
+		return temp;
+	}
 //******************************************************************
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		boolean moved = false;
+		int column = e.getX() / SIZE;
+		int row = e.getY() / SIZE;
+		if(!humanPlayer.isTurnFinished()){
+			for (BoardCell b : targets) {
+				if (row == b.getRow() && column == b.getColumn()) {
+					humanPlayer.setLocationX(row);
+					humanPlayer.setLocationY(column);
+					humanPlayer.setTurnFinished(true);
+					moved = true;
+				}
+			}
+			if(moved == false){
+				JOptionPane.showMessageDialog(this,"That is not a target", "Message", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+		else {
+			JOptionPane.showMessageDialog(this,"Your turn is over", "Message", JOptionPane.INFORMATION_MESSAGE);
+		}
+		
+		repaint();
+		
+		if(cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY())).isRoom()){
+			//SuggestionDialog sd = new SuggestionDialog(this);
+			GameControlPanel x = new GameControlPanel(this);
+			GameControlPanel.SuggestionDialog sd = x.new SuggestionDialog();
+			RoomCell rc = (RoomCell) cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY()));
+			sd.getRoomlocation().setText(rooms.get(rc.getInitial()));
+			sd.setVisible(true);
+		}
+		
+	}
+
+	@Override
+	public void mousePressed(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseReleased(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseEntered(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void mouseExited(MouseEvent e) {
+		// TODO Auto-generated method stub
+		
+	}
 
 }

@@ -7,18 +7,24 @@ import java.util.Set;
 public class ComputerPlayer extends Player {
 	private char lastRoomVisited;
 	private ArrayList<Card> seenCards;
+	private boolean accusationFlag;
 	public ComputerPlayer() {
 		super();
+		accusationFlag = false;
 		seenCards = new ArrayList<Card>();
 	}
 	
+
 	public void pickLocation(Set<BoardCell> targets){
 		boolean changed = false;
-		for(BoardCell b: targets){
+		for(BoardCell b : targets){
 			if(b.isRoom() == true){
 				RoomCell room = (RoomCell) b;
 				if(room.getInitial() != lastRoomVisited){
+					setLocationX(b.getRow());
+					setLocationY(b.getColumn());
 					setLocation(b.getLocation());
+					lastRoomVisited = room.getInitial();
 					changed = true;
 				}
 			}
@@ -29,6 +35,8 @@ public class ComputerPlayer extends Player {
 			int i = 0;
 			for(BoardCell b: targets){
 				if(i == ranNumber){
+					setLocationX(b.getRow());
+					setLocationY(b.getColumn());
 					setLocation(b.getLocation());
 				}
 				i++;
@@ -61,6 +69,9 @@ public class ComputerPlayer extends Player {
 		return sugg;
 	}
 	
+	public void makeAccusation(Suggestion suggestion) {
+		
+	}
 	public void updateSeen(Card seen){
 		seenCards.add(seen);
 	}
@@ -113,5 +124,14 @@ public class ComputerPlayer extends Player {
 	public void setSeenCards(ArrayList<Card> seenCards) {
 		this.seenCards = seenCards;
 	}
+	
+	public boolean isAccusationFlag() {
+		return accusationFlag;
+	}
+
+	public void setAccusationFlag(boolean makeAccusation) {
+		this.accusationFlag = makeAccusation;
+	}
+
 	
 }
