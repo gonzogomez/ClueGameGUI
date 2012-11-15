@@ -2,10 +2,7 @@ package clueGame;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.util.ArrayList;
-import java.util.Set;
 
-import clueGame.RoomCell.DoorDirection;
 
 public abstract class BoardCell {
 	private int row;
@@ -21,10 +18,11 @@ public abstract class BoardCell {
 		return false;
 	}
 
-	public boolean isDoorway( ) { //10/21
+	public boolean isDoorway( ) {
 		return false;
 	}
 	
+	//Draws the possible targets for the human player to select from.
 	public void drawHighlight(Graphics g){
 		g.setColor(Color.white);
 		g.fillRect(getColumn()*SIZE, getRow()*SIZE, SIZE, SIZE);
@@ -32,10 +30,10 @@ public abstract class BoardCell {
 		g.drawRect(getColumn()*SIZE, getRow()*SIZE, SIZE, SIZE);
 	}
 	
+	//Abstract Draw Method
 	public abstract void draw(Graphics g);
 	
-	
-	// Getters and setters
+	//*Getters and Setters*****************************************************
 	public int getRow() {
 		return row;
 	}

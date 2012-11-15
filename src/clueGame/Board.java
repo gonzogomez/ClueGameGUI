@@ -16,15 +16,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.TreeSet;
-
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-
 import clueGame.Card.CardType;
-import clueGame.GameControlPanel.SuggestionDialog;
-import clueGame.RoomCell.DoorDirection;
 
+@SuppressWarnings("serial")
 public class Board extends JPanel implements MouseListener {
 	
 	//Variables
@@ -60,7 +56,7 @@ public class Board extends JPanel implements MouseListener {
 		computerPlayers = new ArrayList<ComputerPlayer>();
 		cards = new ArrayList<Card>();
 		cardListTest = new ArrayList<Card>();
-		whoseTurn = null;
+		whoseTurn = humanPlayer;
 		solution = new Solution(null, null, null);
 		loadConfigFiles();
 		boardSize = numRows*numColumns;
@@ -144,6 +140,7 @@ public class Board extends JPanel implements MouseListener {
 	numRows = rows;
 	in.close();	
 	}
+	
 	//Load Players
 	public void loadPlayers(String fileName) throws BadConfigFormatException, FileNotFoundException{
 		FileReader reader = null;
@@ -181,6 +178,7 @@ public class Board extends JPanel implements MouseListener {
 		}
 	in.close();	
 	}
+	
 	//Load Cards
 	public void loadCards(String fileName) throws BadConfigFormatException, FileNotFoundException{
 		FileReader reader = null;
@@ -207,6 +205,7 @@ public class Board extends JPanel implements MouseListener {
 		}
 	in.close();	
 	}
+	
 	//Calculates the board index, given a row and column number.
 	public int calcIndex(int row, int column) {
 		return ((row * numColumns) + (column));
@@ -325,7 +324,6 @@ public class Board extends JPanel implements MouseListener {
 			}
 		}
 	}
-	
 	
 	//Gets the list of targets in the form of a HashSet
 	public Set<BoardCell> getTargets() {
@@ -465,7 +463,7 @@ public class Board extends JPanel implements MouseListener {
 	public void paintComponent(Graphics g) {
 		ArrayList<Player> players = new ArrayList<Player>();
 		
-		//Add human player and computer players to a single arraylist
+		//Add human player and computer players to a single ArrayList
 		for (Player cp : computerPlayers) {
 			players.add(cp);
 		}
@@ -493,17 +491,23 @@ public class Board extends JPanel implements MouseListener {
 		//This draws the possible human targets
 		//We aren't sure why we have to make sure it is the first computer players turn, but
 		//that's the only way it works.
-		if (whoseTurn == players.get(0) && !humanPlayer.isTurnFinished()) {
-			highlight(g);
+		if (whoseTurn == humanPlayer && !humanPlayer.isTurnFinished()) {
+//			calcTargets(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY()), 3);
+			for(BoardCell b : targets){
+				b.drawHighlight(g);
+			}
 		}
 	}
+	
+//	//Draws the possible targets for the human player to select from.
+//	public void drawHighlight(BoardCell bc, Graphics g){
+//		g.setColor(Color.white);
+//		g.fillRect(bc.getColumn()*SIZE, bc.getRow()*SIZE, SIZE, SIZE);
+//		g.setColor(Color.black);
+//		g.drawRect(bc.getColumn()*SIZE, bc.getRow()*SIZE, SIZE, SIZE);
+//		repaint();
+//	}
 
-	// Highlights target locations
-	public void highlight(Graphics g){
-		for(BoardCell b : targets){
-			b.drawHighlight(g);
-		}
-	}
 	
 //*Getters and Setters***********************************************************
 	public ArrayList<BoardCell> getCells() {
@@ -630,6 +634,9 @@ public class Board extends JPanel implements MouseListener {
 				if (row == b.getRow() && column == b.getColumn()) {
 					humanPlayer.setLocationX(row);
 					humanPlayer.setLocationY(column);
+//					if (getCells().get(calcIndex(row,column)).isRoom()) {
+//						GameControlPanel.getSuggestionDialog().setVisible(true);
+//					}
 					humanPlayer.setTurnFinished(true);
 					moved = true;
 				}
@@ -641,42 +648,30 @@ public class Board extends JPanel implements MouseListener {
 		else {
 			JOptionPane.showMessageDialog(this,"Your turn is over", "Message", JOptionPane.INFORMATION_MESSAGE);
 		}
-		
 		repaint();
 		
-		if(cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY())).isRoom()){
-			//SuggestionDialog sd = new SuggestionDialog(this);
-			GameControlPanel x = new GameControlPanel(this);
-			GameControlPanel.SuggestionDialog sd = x.new SuggestionDialog();
-			RoomCell rc = (RoomCell) cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY()));
-			sd.getRoomlocation().setText(rooms.get(rc.getInitial()));
-			sd.setVisible(true);
-		}
+//		if(cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY())).isRoom()){
+//			//SuggestionDialog sd = new SuggestionDialog(this);
+//			GameControlPanel x = new GameControlPanel(this);
+//			GameControlPanel.SuggestionDialog sd = x.new SuggestionDialog();
+//			RoomCell rc = (RoomCell) cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY()));
+//			sd.getRoomlocation().setText(rooms.get(rc.getInitial()));
+//			sd.setVisible(true);
+//		}
 		
 	}
 
+	//Unused mouth methods****************************
 	@Override
-	public void mousePressed(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mousePressed(MouseEvent e) {}
 
 	@Override
-	public void mouseReleased(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseReleased(MouseEvent e) {}
 
 	@Override
-	public void mouseEntered(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseEntered(MouseEvent e) {}
 
 	@Override
-	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void mouseExited(MouseEvent e) {}
 
 }

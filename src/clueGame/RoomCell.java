@@ -2,7 +2,6 @@ package clueGame;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.util.HashMap;
 import java.util.Map;
 
 public class RoomCell extends BoardCell {

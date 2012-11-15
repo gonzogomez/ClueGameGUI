@@ -1,6 +1,5 @@
 package clueGame;
 
-import java.awt.Dimension;
 import java.awt.GridLayout;
 
 import javax.swing.JLabel;
@@ -11,12 +10,14 @@ import javax.swing.border.TitledBorder;
 
 import clueGame.Card.CardType;
 
+@SuppressWarnings("serial")
 public class PlayerDisplay extends JPanel {
 	private JLabel myCards;
 	private JPanel pd;
 	private JPanel rd;
 	private JPanel wd;
 	
+	//Constructor
 	public PlayerDisplay(HumanPlayer hp) {
 		myCards = new JLabel("My Cards");
 		pd = new JPanel();
@@ -37,13 +38,19 @@ public class PlayerDisplay extends JPanel {
 				weaponCard = c.getName();
 			}
 		}
+		
+		pd = createDisplay("Person", personCard);
+		rd = createDisplay("Room", roomCard);
+		wd = createDisplay("Weapon", weaponCard);
+		
 		setLayout(new GridLayout(8,1));
 		add(myCards);
-		add(pd = createDisplay("Person", personCard));
-		add(rd = createDisplay("Room", roomCard));
-		add(wd = createDisplay("Weapon", weaponCard));
-
+		add(pd);
+		add(rd);
+		add(wd);
 	}
+	
+	//Creates person, room, and weapon textFields that display the human player's cards.
 	public JPanel createDisplay(String title, String name) {
 		JPanel panel = new JPanel();
 		JTextField textBox = new JTextField(name);
