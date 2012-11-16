@@ -3,26 +3,25 @@ package clueGame;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
-import java.awt.Graphics;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Random;
-import java.util.Set;
-
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.border.EtchedBorder;
 import javax.swing.border.TitledBorder;
 import clueGame.Card.CardType;
 
+
 @SuppressWarnings("serial")
 public class GameControlPanel extends JPanel {
-	
+
 	private SouthPanel sp;
 	private NorthPanel np;
 	private SuggestionDialog suggestionDialog;
@@ -33,12 +32,12 @@ public class GameControlPanel extends JPanel {
 	private Suggestion storedSuggestion;
 	private boolean correctAnswer;
 	private int compPlayerIndex;
-	
+
 	//Game Control Panel contains all the game controls.
 	public GameControlPanel(Board board){
 		this.board = board;
 		person = "Miss Scarlet           ";
-		sp = new SouthPanel();
+		setSp(new SouthPanel());
 		np = new NorthPanel();
 		suggestionDialog = new SuggestionDialog();
 		compPlayerIndex = 0;
@@ -47,27 +46,91 @@ public class GameControlPanel extends JPanel {
 		whichPlayer = 0;
 		setLayout(new BorderLayout());
 		add(np, BorderLayout.NORTH);
-		add(sp, BorderLayout.SOUTH);
+		add(getSp(), BorderLayout.SOUTH);
 	}
-	
+
 	//A createButton method for the Next Player and Make an Accusation buttons.
 	public JButton createButton(String name){
 		JButton button = new JButton(name);
 		button.setPreferredSize(new Dimension(200, 60));
 		return button;
 	}
-	
-//************************************************************************************************************************************
-	
+
+	//Logic for the human's turn
+	public void makeHumanMove(int dieRoll){
+		if (!board.getHumanPlayer().isTurnFinished()){
+			HumanPlayer hp = board.getHumanPlayer();
+
+			//Gets human players location
+			int humansRow = hp.getLocationX();
+			int humansColumn = hp.getLocationY();
+
+			//Calculates targets
+			board.calcTargets(board.calcIndex(humansRow, humansColumn), dieRoll);
+
+			//repaints the board
+			board.repaint();
+		}
+	}
+
+	//Logic for the computer's turn
+	public void makeComputerMove(int dieRoll) {
+		//Sets a local pointer to current computer player
+		ComputerPlayer currentCompPlayer = board.getComputerPlayers().get(compPlayerIndex);
+
+		//If computer player knows the solution, they should make an accusation
+		if (currentCompPlayer.isAccusationFlag() == true) {
+			correctAnswer = board.checkAccusation(storedSuggestion.getPerson(), storedSuggestion.getRoom(), storedSuggestion.getWeapon());
+			if (correctAnswer == true) {
+				endGame();
+			}
+		}
+
+		//Gets computer players row and column
+		int row = currentCompPlayer.getLocationX();
+		int column = currentCompPlayer.getLocationY();
+
+		//Calculates targets for current computer player's position
+		board.calcTargets(board.calcIndex(row, column), dieRoll);
+
+		//Calls pick location which chooses a random location unless there is a door present
+		currentCompPlayer.pickLocation(board.getTargets());
+
+		board.repaint();
+
+		//Gets updated computer location
+		int locationX = currentCompPlayer.getLocationX();
+		int locationY = currentCompPlayer.getLocationY();
+
+		//Checks to see if the computer's selection was a door
+		if (board.getCells().get(board.calcIndex(locationX, locationY)).isRoom()) {
+			//Creates and handles suggestion
+			Suggestion sugg = currentCompPlayer.createSuggestion(board.getCards(), board.getCells());
+			Card returnedCard = board.handleSuggestion(sugg.getPerson(), sugg.getWeapon(), sugg.getRoom());
+
+			//Stores the suggestion and sets accusation flag to true so computer makes a guess the next round
+			if (returnedCard == null) {
+				storedSuggestion = sugg;
+				currentCompPlayer.setAccusationFlag(true);
+				sp.guessReturnPanel.guessResultBox.setText("Guess could not be disproved");
+			} else {
+				sp.guessPanel.guessBox.setText(sugg.getPerson() + ", " + sugg.getRoom() + ", " + sugg.getWeapon());
+				sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
+			}
+		}
+	}
+
+	//************************************************************************************************************************************
+
 	//NORTH PANEL: contains the Whose Turn?, Next Player button, and Make an Accusation Button
-	public class NorthPanel extends JPanel{
+	public class NorthPanel extends JPanel {
 		private TurnPanel turnPanel;
 		private AccusationDialog accusationDialog;
 		private JButton nextButton;
 		private JButton accusationButton;
-		
+
 		//Constructor
-		public NorthPanel(){
+		public NorthPanel() {
 			turnPanel = new TurnPanel();
 			setLayout(new GridLayout(1, 3));
 			add(turnPanel);
@@ -80,12 +143,12 @@ public class GameControlPanel extends JPanel {
 			add(nextButton);
 			add(accusationButton);
 		}
-		
+
 		//Displays whose turn it is.
 		public class TurnPanel extends JPanel {
 			private JLabel title;
 			private JTextArea textBox;
-			
+
 			public TurnPanel() {
 				title = new JLabel("Whose turn?");
 				textBox = new JTextArea(person);
@@ -94,115 +157,82 @@ public class GameControlPanel extends JPanel {
 				add(textBox);
 			}
 		}
-		
-		
-		//Button Listener for "Next Player" and "Make an Accusation"
+
+		//NOTES:
+		//1.) Suggestions don't update the south panel display for human turn
+		//2.) Making a suggestion doesn't bring the person into the room with you yet.
+		//3.) Human player can reclick next button to change roll size.
+		//3.) I hate Clue.
+
 		public class GameControlButtonListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
 				if (e.getSource() == nextButton) {
 					Random rand = new Random();
 					int dieRoll = rand.nextInt(6) + 1;
 					String dieRollString = "" + dieRoll;
-					
-					//If it's the human player's turn
-					if(board.getWhoseTurn() == board.getHumanPlayer()) {
-						turnPanel.textBox.setText(board.getWhoseTurn().getName());
-						sp.diePanel.rollBox.setText(dieRollString);
-						board.getHumanPlayer().setTurnFinished(false);
-						humanTurn(dieRoll);
-						whichPlayer = 0;
-						board.setWhoseTurn(board.getComputerPlayers().get(whichPlayer));
-			
-					}
-					else {
-						turnPanel.textBox.setText(board.getWhoseTurn().getName());
-						sp.diePanel.rollBox.setText(dieRollString);
-						computerTurn(dieRoll);
-						if(whichPlayer == 4){
+
+					//This logic checks if the human players turn has been set back to unfinished.
+					if (board.getHumanPlayer().isTurnFinished() == false) {
+						if (board.getWhoseTurn() == board.getComputerPlayers().get(4)) {
 							board.setWhoseTurn(board.getHumanPlayer());
-						}
-						else{
-							board.setWhoseTurn(board.getComputerPlayers().get(++whichPlayer));
+						} 
+					}
+
+					//Human Players turn
+					if (board.getWhoseTurn() == board.getHumanPlayer()) {
+						//Updates displays
+						turnPanel.textBox.setText(board.getWhoseTurn().getName());
+						getSp().diePanel.rollBox.setText(dieRollString);
+
+						//Calls the humans turn method
+						//board.getHumanPlayer().makeHumanMove(dieRoll);
+						makeHumanMove(dieRoll);
+
+						//Controls Computer players turn
+					} else {
+						//Update control panel display
+						turnPanel.textBox.setText(board.getWhoseTurn().getName());
+						getSp().diePanel.rollBox.setText(dieRollString);
+
+						//Calling makeMove for computer player
+						makeComputerMove(dieRoll);
+
+						//If it's the last computer players turn, set to human's turn
+						if (board.getWhoseTurn() == board.getComputerPlayers().get(4)) {
+							board.getHumanPlayer().setTurnFinished(false);
+							compPlayerIndex = 0;
+						} else {
+							compPlayerIndex++;
+							board.setWhoseTurn(board.getComputerPlayers().get(compPlayerIndex));
 						}
 					}
+
 				} else if (e.getSource() == accusationButton) {
 					accusationDialog.setVisible(true);
 				}
 			}
 		}
 
-		//Logic for the human's turn
-		public void humanTurn(int dieRoll){
-			if (!board.getHumanPlayer().isTurnFinished()){
-				HumanPlayer hp = board.getHumanPlayer();
-				int row = hp.getLocationX();
-				int column = hp.getLocationY();
-				board.calcTargets(board.calcIndex(row, column), dieRoll);
-				board.repaint();
-				BoardCell bc = board.getCells().get(board.calcIndex(hp.getLocationX(), hp.getLocationY()));
-				if(bc.isRoom()){
-					RoomCell rc = (RoomCell) bc;
-					String name = board.getRooms().get(rc.getInitial());
-					suggestionDialog.getRoomlocation().setText(name);
-					suggestionDialog.setVisible(true);
-				}
-			}
-		}
-		
-		//Logic for the computer's turn
-		public void computerTurn(int dieRoll) {
-			ComputerPlayer currentCompPlayer = board.getComputerPlayers().get(whichPlayer);
-			
-			if (currentCompPlayer.isAccusationFlag() == true) {
-				correctAnswer = board.checkAccusation(storedSuggestion.getPerson(), storedSuggestion.getRoom(), storedSuggestion.getWeapon());
-				if (correctAnswer == true) {
-					endGame();
-				}
-			}
-			int row = currentCompPlayer.getLocationX();
-			int column = currentCompPlayer.getLocationY();
-			board.calcTargets(board.calcIndex(row, column), dieRoll);
-			currentCompPlayer.pickLocation(board.getTargets());
-			board.repaint();
-			int locationX = currentCompPlayer.getLocationX();
-			int locationY = currentCompPlayer.getLocationY();
-			
-			if (board.getCells().get(board.calcIndex(locationX, locationY)).isRoom()){
-				Suggestion sugg = currentCompPlayer.createSuggestion(board.getCards(), board.getCells());
-				Card returnedCard = board.handleSuggestion(sugg.getPerson(), sugg.getWeapon(), sugg.getRoom());
-				if (returnedCard == null) {
-					storedSuggestion = sugg;
-					currentCompPlayer.setAccusationFlag(true);
-					sp.guessReturnPanel.guessResultBox.setText("Guess could not be disproved");
-				}
-				
-				if(returnedCard != null){
-					sp.guessPanel.guessBox.setText(sugg.getPerson() + ", " + sugg.getRoom() + ", " + sugg.getWeapon());
-					sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
-				}
-			}
-		}
-		
 		//Accusation Dialog box
 		public class AccusationDialog extends JDialog {
 			private JLabel room, person, weapon;
-			private JComboBox<String> personComboBox, weaponComboBox, roomComboBox;
+			private JComboBox personComboBox, weaponComboBox, roomComboBox;
 			private JButton submit, cancel;
-			
+
 			//Constructor
 			public AccusationDialog() {
 				setTitle("Make an Accusation");
 				setSize(300, 200);
 				setLayout(new GridLayout(4,2));
 				room = new JLabel("Room");
-				roomComboBox = new JComboBox<String>();
+				roomComboBox = new JComboBox();
 				person = new JLabel("Person");
 				weapon = new JLabel("Weapon");
-				personComboBox = new JComboBox<String>();
-				weaponComboBox = new JComboBox<String>();
+				personComboBox = new JComboBox();
+				weaponComboBox = new JComboBox();
 				submit = new JButton("Submit");
 				cancel = new JButton("Cancel");
-				
+
 				for(Card c : board.getCards()){
 					if (c.getCardType() == CardType.ROOM) {
 						roomComboBox.addItem(c.getName());
@@ -214,9 +244,9 @@ public class GameControlPanel extends JPanel {
 						weaponComboBox.addItem(c.getName());
 					}
 				}
-				
+
 				AccusationButtonListener listener = new AccusationButtonListener();
-				
+
 				add(person);
 				add(personComboBox);
 				add(room);
@@ -225,11 +255,11 @@ public class GameControlPanel extends JPanel {
 				add(weaponComboBox);
 				add(submit);
 				add(cancel);
-				
+
 				submit.addActionListener(listener);
 				cancel.addActionListener(listener);
 			}
-			
+
 			//ButtonListener for AccusationDialog box (submit, cancel)
 			public class AccusationButtonListener implements ActionListener {
 				@Override
@@ -242,7 +272,7 @@ public class GameControlPanel extends JPanel {
 						if(correctGuess == true){
 							endGame();
 						}
-						
+
 					} else if (e.getSource() == cancel) {
 						accusationDialog.setVisible(false);
 					}	
@@ -250,10 +280,8 @@ public class GameControlPanel extends JPanel {
 			}
 		}
 	}
-	
-//*******************************************************************************************************************************
-	
 
+	//*******************************************************************************************************************************
 
 	//SOUTH PANEL: contains Die Roll, Guess, and Guess Result boxes
 	public class SouthPanel extends JPanel {
@@ -264,20 +292,36 @@ public class GameControlPanel extends JPanel {
 		//Constructor
 		public SouthPanel() {
 			diePanel = new Die();
-			guessPanel = new Guess();
-			guessReturnPanel = new GuessReturn();
+			setGuessPanel(new Guess());
+			setGuessReturnPanel(new GuessReturn());
 			setLayout(new BorderLayout());
-			
+
 			add(diePanel, BorderLayout.WEST);
-			add(guessPanel, BorderLayout.CENTER);
-			add(guessReturnPanel, BorderLayout.EAST);
+			add(getGuessPanel(), BorderLayout.CENTER);
+			add(getGuessReturnPanel(), BorderLayout.EAST);
 		}
-		
+
+		public GuessReturn getGuessReturnPanel() {
+			return guessReturnPanel;
+		}
+
+		public void setGuessReturnPanel(GuessReturn guessReturnPanel) {
+			this.guessReturnPanel = guessReturnPanel;
+		}
+
+		public Guess getGuessPanel() {
+			return guessPanel;
+		}
+
+		public void setGuessPanel(Guess guessPanel) {
+			this.guessPanel = guessPanel;
+		}
+
 		//Die Panel
 		public class Die extends JPanel {
 			private JLabel roll;
 			private JTextArea rollBox;
-			
+
 			public Die() {
 				setBorder(new TitledBorder(new EtchedBorder(), "Die"));
 				roll = new JLabel("Roll");
@@ -286,7 +330,7 @@ public class GameControlPanel extends JPanel {
 				add(rollBox);
 			}
 		}
-		
+
 		//Guess Panel
 		public class Guess extends JPanel {
 			private JLabel guess;
@@ -294,12 +338,18 @@ public class GameControlPanel extends JPanel {
 			public Guess() {
 				setBorder(new TitledBorder(new EtchedBorder(), "Guess"));
 				guess = new JLabel("Guess");
-				guessBox = new JTextArea("Guess");
+				setGuessBox(new JTextArea("Guess"));
 				add(guess);
-				add(guessBox);
+				add(getGuessBox());
+			}
+			public JTextArea getGuessBox() {
+				return guessBox;
+			}
+			public void setGuessBox(JTextArea guessBox) {
+				this.guessBox = guessBox;
 			}
 		}
-		
+
 		//Guess Result Panel
 		public class GuessReturn extends JPanel {
 			private JLabel guessResultLabel;
@@ -307,25 +357,28 @@ public class GameControlPanel extends JPanel {
 			public GuessReturn() {
 				setBorder(new TitledBorder(new EtchedBorder(), "Guess Result"));
 				guessResultLabel = new JLabel("Response");
-				guessResultBox = new JTextArea("Response");
-				
+				setGuessResultBox(new JTextArea("Response"));
+
 				add(guessResultLabel);
-				add(guessResultBox);
+				add(getGuessResultBox());
+			}
+			public JTextArea getGuessResultBox() {
+				return guessResultBox;
+			}
+			public void setGuessResultBox(JTextArea guessResultBox) {
+				this.guessResultBox = guessResultBox;
 			}
 		}
 	}
-	
-	public void endGame() {
-		//TODO stuff.
-	}
-	
+
+	//*******************************************************************************************************************************
 	//Suggestion Dialog Box 
 	public class SuggestionDialog extends JDialog {
 		private JLabel yourRoom, person, weapon;
 		private JLabel roomLocation;
-		private JComboBox<String> personComboBox, weaponComboBox;
+		private JComboBox personComboBox, weaponComboBox;
 		private JButton submit, cancel;
-		
+
 		//Constructor
 		public SuggestionDialog() {
 			setTitle("Make a Guess");
@@ -335,11 +388,11 @@ public class GameControlPanel extends JPanel {
 			roomLocation = new JLabel();
 			person = new JLabel("Person");
 			weapon = new JLabel("Weapon");
-			personComboBox = new JComboBox<String>();
-			weaponComboBox = new JComboBox<String>();
+			personComboBox = new JComboBox();
+			weaponComboBox = new JComboBox();
 			submit = new JButton("Submit");
 			cancel = new JButton("Cancel");
-			
+
 			for(Card c : board.getCards()){
 				if(c.getCardType() == CardType.PERSON){
 					personComboBox.addItem(c.getName());
@@ -348,9 +401,9 @@ public class GameControlPanel extends JPanel {
 					weaponComboBox.addItem(c.getName());
 				}
 			}
-			
+
 			ButtonListener listener = new ButtonListener();
-			
+
 			add(yourRoom);
 			add(roomLocation);
 			add(person);
@@ -359,11 +412,11 @@ public class GameControlPanel extends JPanel {
 			add(weaponComboBox);
 			add(submit);
 			add(cancel);
-			
+
 			submit.addActionListener(listener);
 			cancel.addActionListener(listener);
 		}
-				
+
 		//ButtonListener for SuggestionDialog box (submit, cancel)
 		public class ButtonListener implements ActionListener {
 			@Override
@@ -372,18 +425,22 @@ public class GameControlPanel extends JPanel {
 					String selectedPerson = (String) personComboBox.getSelectedItem();
 					String selectedWeapon = (String) weaponComboBox.getSelectedItem();
 					Card returnedCard = board.handleSuggestion(selectedPerson, selectedWeapon, roomLocation.getText());
-					sp.guessPanel.guessBox.setText(selectedPerson + ", " + roomLocation.getText() + ", " + selectedWeapon);
+					//sp.guessPanel.guessBox.setText(selectedPerson + ", " + roomLocation.getText() + ", " + selectedWeapon);
+					sp.guessPanel.guessBox.setText("Displaying the correct thing!");
 					if(returnedCard != null){
 						sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
+						//getSp().getGuessReturnPanel().getGuessResultBox().setText(returnedCard.getName());
+					} else {
+						JOptionPane.showMessageDialog(board,"There was no card to be returned", "Message", JOptionPane.INFORMATION_MESSAGE);
 					}
 					suggestionDialog.setVisible(false);
-					
+
 				} else if (e.getSource() == cancel) {
 					suggestionDialog.setVisible(false);
 				}	
 			}
 		}
-		
+
 		public JLabel getRoomlocation() {
 			return roomLocation;
 		}
@@ -392,7 +449,12 @@ public class GameControlPanel extends JPanel {
 			this.roomLocation = roomlocation;
 		}
 	}
-	
+
+
+	public void endGame() {
+		//TODO stuff.
+	}
+
 	//*Getters and Setters***************************************************************************************************
 	public boolean isSelectedTarget() {
 		return selectedTarget;
@@ -401,12 +463,20 @@ public class GameControlPanel extends JPanel {
 	public void setSelectedTarget(boolean selectedTarget) {
 		this.selectedTarget = selectedTarget;
 	}
-	
+
 	public SuggestionDialog getSuggestionDialog() {
 		return suggestionDialog;
 	}
 
 	public void setSuggestionDialog(SuggestionDialog suggestionDialog) {
 		this.suggestionDialog = suggestionDialog;
+	}
+
+	public SouthPanel getSp() {
+		return sp;
+	}
+
+	public void setSp(SouthPanel sp) {
+		this.sp = sp;
 	}
 }

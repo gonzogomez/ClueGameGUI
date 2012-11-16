@@ -8,40 +8,40 @@ public class ComputerPlayer extends Player {
 	private char lastRoomVisited;
 	private ArrayList<Card> seenCards;
 	private boolean accusationFlag;
+	
+	//Constructor
 	public ComputerPlayer() {
 		super();
 		accusationFlag = false;
 		seenCards = new ArrayList<Card>();
 	}
-	
-
+		
 	public void pickLocation(Set<BoardCell> targets){
-		boolean changed = false;
+		boolean pickedNewLocation = false;
 		for(BoardCell b : targets){
 			if(b.isRoom() == true){
 				RoomCell room = (RoomCell) b;
 				if(room.getInitial() != lastRoomVisited){
-					setLocationX(b.getRow());
-					setLocationY(b.getColumn());
-					setLocation(b.getLocation());
+					this.setLocationX(b.getRow());
+					this.setLocationY(b.getColumn());
+					this.setLocation(b.getLocation());
 					lastRoomVisited = room.getInitial();
-					changed = true;
+					pickedNewLocation = true;
 				}
 			}
 		}
-		if(changed == false){
+		if(pickedNewLocation == false){
 			Random rand = new Random();
 			int ranNumber = rand.nextInt(targets.size());
 			int i = 0;
 			for(BoardCell b: targets){
 				if(i == ranNumber){
-					setLocationX(b.getRow());
-					setLocationY(b.getColumn());
-					setLocation(b.getLocation());
+					this.setLocationX(b.getRow());
+					this.setLocationY(b.getColumn());
+					this.setLocation(b.getLocation());
 				}
 				i++;
 			}
-		
 		}
 	}
 	
@@ -69,12 +69,16 @@ public class ComputerPlayer extends Player {
 		return sugg;
 	}
 	
+
 	public void makeAccusation(Suggestion suggestion) {
-		
+		//TODO implement
 	}
+	
+	
 	public void updateSeen(Card seen){
 		seenCards.add(seen);
 	}
+	
 	//Converts room initial to full name
 	public String convertInitial(char initial){
 		String name = null;

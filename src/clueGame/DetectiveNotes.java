@@ -45,7 +45,7 @@ public class DetectiveNotes extends JDialog {
 	
 	public JPanel createComboBoxPanel(String name, CardType ctype){
 		JPanel panel = new JPanel();
-		JComboBox<String> cb = new JComboBox<String>();
+		JComboBox cb = new JComboBox();
 		panel.setLayout(new BorderLayout());
 		cb.addItem("Don't Know");
 		for(Card c : deck){

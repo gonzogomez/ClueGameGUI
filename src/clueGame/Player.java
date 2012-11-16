@@ -90,5 +90,4 @@ public class Player {
 	public void setLocationY(int locationY) {
 		this.locationY = locationY;
 	}
-	
 }

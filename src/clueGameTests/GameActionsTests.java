@@ -443,7 +443,7 @@ public class GameActionsTests {
 		Card returnCard = new Card();
 		//Create array of players and human player
 		ArrayList<ComputerPlayer> computers = new ArrayList<ComputerPlayer>();
-		HumanPlayer hplayer = new HumanPlayer();
+		HumanPlayer hplayer = new HumanPlayer(board);
 		//Deal card to human player
 		hplayer.getMyCards().add(kitchenCard);
 		//Deal cards to the computer players

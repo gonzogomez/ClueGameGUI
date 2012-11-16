@@ -45,6 +45,7 @@ public class Board extends JPanel implements MouseListener {
 	private int numRooms;
 	private int numWeapons;
 	private static final int SIZE = 30;
+	private int compPlayerIndex = 0;
 	
 	//Constructor - Calls loadConfigFiles() method.
 	public Board() {
@@ -52,11 +53,12 @@ public class Board extends JPanel implements MouseListener {
 		targets = new HashSet<BoardCell>();
 		rooms = new HashMap<Character, String>();
 		cells = new ArrayList<BoardCell>();
-		humanPlayer = new HumanPlayer();
+		humanPlayer = new HumanPlayer(this);
 		computerPlayers = new ArrayList<ComputerPlayer>();
 		cards = new ArrayList<Card>();
 		cardListTest = new ArrayList<Card>();
 		whoseTurn = humanPlayer;
+		compPlayerIndex = 0;
 		solution = new Solution(null, null, null);
 		loadConfigFiles();
 		boardSize = numRows*numColumns;
@@ -461,13 +463,8 @@ public class Board extends JPanel implements MouseListener {
 
 	//Draws the board
 	public void paintComponent(Graphics g) {
-		ArrayList<Player> players = new ArrayList<Player>();
-		
-		//Add human player and computer players to a single ArrayList
-		for (Player cp : computerPlayers) {
-			players.add(cp);
-		}
-		players.add(humanPlayer);
+
+		System.out.println(whoseTurn + " " + "human turn finished? = " + humanPlayer.isTurnFinished() ); 
 		
 		super.paintComponent(g);
 		
@@ -485,28 +482,68 @@ public class Board extends JPanel implements MouseListener {
 		}
 		
 		//Draws player circles
-		for(Player p : players) {
-			p.draw(g);
+		for(Player cp : computerPlayers) {
+			cp.draw(g);
 		}
+		humanPlayer.draw(g);
+		
 		//This draws the possible human targets
-		//We aren't sure why we have to make sure it is the first computer players turn, but
-		//that's the only way it works.
 		if (whoseTurn == humanPlayer && !humanPlayer.isTurnFinished()) {
-//			calcTargets(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY()), 3);
+			System.out.println("highlighting");
+
 			for(BoardCell b : targets){
 				b.drawHighlight(g);
 			}
 		}
 	}
 	
-//	//Draws the possible targets for the human player to select from.
-//	public void drawHighlight(BoardCell bc, Graphics g){
-//		g.setColor(Color.white);
-//		g.fillRect(bc.getColumn()*SIZE, bc.getRow()*SIZE, SIZE, SIZE);
-//		g.setColor(Color.black);
-//		g.drawRect(bc.getColumn()*SIZE, bc.getRow()*SIZE, SIZE, SIZE);
-//		repaint();
-//	}
+
+	@Override
+	public void mouseClicked(MouseEvent e) {
+		boolean selectedTarget = false;
+
+		int mouseColumn = e.getX() / SIZE;
+		int mouseRow = e.getY() / SIZE;
+		
+		if(!humanPlayer.isTurnFinished()){
+			//Compares mouse row and column to possible targets
+			for (BoardCell b : targets) {
+				if (mouseRow == b.getRow() && mouseColumn == b.getColumn()) {
+					selectedTarget = true;
+					getHumanPlayer().setTurnFinished(true);
+					humanPlayer.setLocationX(mouseRow);
+					humanPlayer.setLocationY(mouseColumn);
+					BoardCell bc = getCells().get(calcIndex(mouseRow, mouseColumn));
+					
+					//If player selected a room, display Suggestion Dialog Box
+					if (bc.isRoom()) {
+						//Takes the room the player is in and presets it in the Suggestion
+						RoomCell rc = (RoomCell) bc;
+						String roomName = getRooms().get(rc.getInitial());
+						GameControlPanel gcp = new GameControlPanel(this);
+						gcp.getSuggestionDialog().getRoomlocation().setText(roomName);
+						
+						gcp.getSuggestionDialog().setVisible(true);
+					}
+				}
+			}
+			//If mouse was clicked and no target was selected, display error message dialog
+			if(selectedTarget == false){
+				JOptionPane.showMessageDialog(this,"That is not a target", "Message", JOptionPane.INFORMATION_MESSAGE);
+			}
+		}
+		//If human clicks when it is not their turn, display error message dialog
+		else {
+			JOptionPane.showMessageDialog(this,"Your turn is over", "Message", JOptionPane.INFORMATION_MESSAGE);
+		}
+		repaint();
+		
+		//If human player has finished turn, set to first computer players turn
+		if (getWhoseTurn() == getHumanPlayer() && getHumanPlayer().isTurnFinished()) {
+			setWhoseTurn(getComputerPlayers().get(0));
+		}
+
+	}
 
 	
 //*Getters and Setters***********************************************************
@@ -623,43 +660,6 @@ public class Board extends JPanel implements MouseListener {
 		return temp;
 	}
 //******************************************************************
-
-	@Override
-	public void mouseClicked(MouseEvent e) {
-		boolean moved = false;
-		int column = e.getX() / SIZE;
-		int row = e.getY() / SIZE;
-		if(!humanPlayer.isTurnFinished()){
-			for (BoardCell b : targets) {
-				if (row == b.getRow() && column == b.getColumn()) {
-					humanPlayer.setLocationX(row);
-					humanPlayer.setLocationY(column);
-//					if (getCells().get(calcIndex(row,column)).isRoom()) {
-//						GameControlPanel.getSuggestionDialog().setVisible(true);
-//					}
-					humanPlayer.setTurnFinished(true);
-					moved = true;
-				}
-			}
-			if(moved == false){
-				JOptionPane.showMessageDialog(this,"That is not a target", "Message", JOptionPane.INFORMATION_MESSAGE);
-			}
-		}
-		else {
-			JOptionPane.showMessageDialog(this,"Your turn is over", "Message", JOptionPane.INFORMATION_MESSAGE);
-		}
-		repaint();
-		
-//		if(cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY())).isRoom()){
-//			//SuggestionDialog sd = new SuggestionDialog(this);
-//			GameControlPanel x = new GameControlPanel(this);
-//			GameControlPanel.SuggestionDialog sd = x.new SuggestionDialog();
-//			RoomCell rc = (RoomCell) cells.get(calcIndex(humanPlayer.getLocationX(), humanPlayer.getLocationY()));
-//			sd.getRoomlocation().setText(rooms.get(rc.getInitial()));
-//			sd.setVisible(true);
-//		}
-		
-	}
 
 	//Unused mouth methods****************************
 	@Override
