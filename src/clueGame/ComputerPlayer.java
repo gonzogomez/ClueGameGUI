@@ -8,11 +8,15 @@ public class ComputerPlayer extends Player {
 	private char lastRoomVisited;
 	private ArrayList<Card> seenCards;
 	private boolean accusationFlag;
+	private boolean correctAnswer;
+	private Board board;
 	
 	//Constructor
-	public ComputerPlayer() {
+	public ComputerPlayer(Board board) {
 		super();
+		this.board = board;
 		accusationFlag = false;
+		setCorrectAnswer(false);
 		seenCards = new ArrayList<Card>();
 	}
 		
@@ -71,7 +75,7 @@ public class ComputerPlayer extends Player {
 	
 
 	public void makeAccusation(Suggestion suggestion) {
-		//TODO implement
+		setCorrectAnswer(board.checkAccusation(suggestion.getPerson(), suggestion.getRoom(), suggestion.getWeapon()));
 	}
 	
 	
@@ -135,6 +139,14 @@ public class ComputerPlayer extends Player {
 
 	public void setAccusationFlag(boolean makeAccusation) {
 		this.accusationFlag = makeAccusation;
+	}
+
+	public boolean isCorrectAnswer() {
+		return correctAnswer;
+	}
+
+	public void setCorrectAnswer(boolean correctAnswer) {
+		this.correctAnswer = correctAnswer;
 	}
 
 	

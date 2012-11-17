@@ -28,9 +28,7 @@ public class GameControlPanel extends JPanel {
 	private boolean selectedTarget = true;
 	private Board board;
 	private String person;
-	private int whichPlayer;
 	private Suggestion storedSuggestion;
-	private boolean correctAnswer;
 	private int compPlayerIndex;
 
 	//Game Control Panel contains all the game controls.
@@ -39,11 +37,10 @@ public class GameControlPanel extends JPanel {
 		person = "Miss Scarlet           ";
 		setSp(new SouthPanel());
 		np = new NorthPanel();
+		storedSuggestion = new Suggestion();
 		suggestionDialog = new SuggestionDialog();
 		compPlayerIndex = 0;
 		board.setWhoseTurn(board.getHumanPlayer());
-		correctAnswer = false;
-		whichPlayer = 0;
 		setLayout(new BorderLayout());
 		add(np, BorderLayout.NORTH);
 		add(getSp(), BorderLayout.SOUTH);
@@ -58,7 +55,7 @@ public class GameControlPanel extends JPanel {
 
 	//Logic for the human's turn
 	public void makeHumanMove(int dieRoll){
-		if (!board.getHumanPlayer().isTurnFinished()){
+		if (!board.getHumanPlayer().isTurnFinished() && !board.getHumanPlayer().isGivenTargets()){
 			HumanPlayer hp = board.getHumanPlayer();
 
 			//Gets human players location
@@ -67,7 +64,10 @@ public class GameControlPanel extends JPanel {
 
 			//Calculates targets
 			board.calcTargets(board.calcIndex(humansRow, humansColumn), dieRoll);
-
+			
+			//Disallows multiple rolls of dice
+			board.getHumanPlayer().setGivenTargets(true);
+			
 			//repaints the board
 			board.repaint();
 		}
@@ -80,9 +80,11 @@ public class GameControlPanel extends JPanel {
 
 		//If computer player knows the solution, they should make an accusation
 		if (currentCompPlayer.isAccusationFlag() == true) {
-			correctAnswer = board.checkAccusation(storedSuggestion.getPerson(), storedSuggestion.getRoom(), storedSuggestion.getWeapon());
-			if (correctAnswer == true) {
+			currentCompPlayer.makeAccusation(storedSuggestion);
+			if (currentCompPlayer.isCorrectAnswer()) {
 				endGame();
+			} else {
+				JOptionPane.showMessageDialog(board,"The computer player made an incorrect guess of: " + storedSuggestion.getPerson() + ", " + storedSuggestion.getRoom() + ", " + storedSuggestion.getWeapon(), "Message", JOptionPane.INFORMATION_MESSAGE);
 			}
 		}
 
@@ -108,6 +110,19 @@ public class GameControlPanel extends JPanel {
 			Suggestion sugg = currentCompPlayer.createSuggestion(board.getCards(), board.getCells());
 			Card returnedCard = board.handleSuggestion(sugg.getPerson(), sugg.getWeapon(), sugg.getRoom());
 
+			for (ComputerPlayer cp : board.getComputerPlayers()) {
+				if (cp.getName().equals(sugg.getPerson())) {
+					cp.setLocationX(currentCompPlayer.getLocationX());
+					cp.setLocationY(currentCompPlayer.getLocationY());
+				}
+			}
+			
+			if (board.getHumanPlayer().equals(sugg.getPerson())) {
+				board.getHumanPlayer().setLocationX(currentCompPlayer.getLocationX());
+				board.getHumanPlayer().setLocationY(currentCompPlayer.getLocationY());
+				
+			}
+			
 			//Stores the suggestion and sets accusation flag to true so computer makes a guess the next round
 			if (returnedCard == null) {
 				storedSuggestion = sugg;
@@ -117,6 +132,7 @@ public class GameControlPanel extends JPanel {
 				sp.guessPanel.guessBox.setText(sugg.getPerson() + ", " + sugg.getRoom() + ", " + sugg.getWeapon());
 				sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
 			}
+			repaint();
 		}
 	}
 
@@ -160,9 +176,7 @@ public class GameControlPanel extends JPanel {
 
 		//NOTES:
 		//1.) Suggestions don't update the south panel display for human turn
-		//2.) Making a suggestion doesn't bring the person into the room with you yet.
-		//3.) Human player can reclick next button to change roll size.
-		//3.) I hate Clue.
+		//2.) I hate Clue.
 
 		public class GameControlButtonListener implements ActionListener {
 			public void actionPerformed(ActionEvent e) {
@@ -170,6 +184,11 @@ public class GameControlPanel extends JPanel {
 					Random rand = new Random();
 					int dieRoll = rand.nextInt(6) + 1;
 					String dieRollString = "" + dieRoll;
+					
+					//Disallows human from rolling multiple times in a turn
+					if (board.getHumanPlayer().isGivenTargets()) {
+						JOptionPane.showMessageDialog(board,"You need to finish your turn", "Message", JOptionPane.INFORMATION_MESSAGE);
+					}
 
 					//This logic checks if the human players turn has been set back to unfinished.
 					if (board.getHumanPlayer().isTurnFinished() == false) {
@@ -188,7 +207,7 @@ public class GameControlPanel extends JPanel {
 						//board.getHumanPlayer().makeHumanMove(dieRoll);
 						makeHumanMove(dieRoll);
 
-						//Controls Computer players turn
+					//Controls Computer players turn
 					} else {
 						//Update control panel display
 						turnPanel.textBox.setText(board.getWhoseTurn().getName());
@@ -208,7 +227,11 @@ public class GameControlPanel extends JPanel {
 					}
 
 				} else if (e.getSource() == accusationButton) {
-					accusationDialog.setVisible(true);
+					if (!board.getHumanPlayer().isSelectedTarget()) {
+						accusationDialog.setVisible(true);
+					} else {
+						JOptionPane.showMessageDialog(board, "It is not your turn!", "Message", JOptionPane.INFORMATION_MESSAGE);
+					}
 				}
 			}
 		}
@@ -427,6 +450,15 @@ public class GameControlPanel extends JPanel {
 					Card returnedCard = board.handleSuggestion(selectedPerson, selectedWeapon, roomLocation.getText());
 					//sp.guessPanel.guessBox.setText(selectedPerson + ", " + roomLocation.getText() + ", " + selectedWeapon);
 					sp.guessPanel.guessBox.setText("Displaying the correct thing!");
+					
+					//Moves correct computer player to room where human player made suggestion
+					for (ComputerPlayer cp : board.getComputerPlayers()) {
+						if (cp.getName().equals(selectedPerson)) {
+							cp.setLocationX(board.getHumanPlayer().getLocationX());
+							cp.setLocationY(board.getHumanPlayer().getLocationY());
+						}
+					}
+					
 					if(returnedCard != null){
 						sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
 						//getSp().getGuessReturnPanel().getGuessResultBox().setText(returnedCard.getName());
@@ -437,7 +469,8 @@ public class GameControlPanel extends JPanel {
 
 				} else if (e.getSource() == cancel) {
 					suggestionDialog.setVisible(false);
-				}	
+				}
+				board.repaint();
 			}
 		}
 
@@ -452,7 +485,11 @@ public class GameControlPanel extends JPanel {
 
 
 	public void endGame() {
-		//TODO stuff.
+		
+		
+		if (board.getWhoseTurn() == board.getHumanPlayer()) {
+			JOptionPane.showMessageDialog(board,"There was no card to be returned", "Message", JOptionPane.INFORMATION_MESSAGE);
+		}
 	}
 
 	//*Getters and Setters***************************************************************************************************

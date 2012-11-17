@@ -2,11 +2,15 @@ package clueGame;
 
 public class HumanPlayer extends Player {
 	private boolean turnFinished;
+	private boolean givenTargets;
+	private boolean selectedTarget;
 	private Board board;
 	
 	//Constructor
 	public HumanPlayer(Board board) {
 		turnFinished = false;
+		givenTargets = false;
+		setSelectedTarget(false);
 		this.board = board;
 	}
 	
@@ -36,6 +40,25 @@ public class HumanPlayer extends Player {
 
 	public void setTurnFinished(boolean turnFinished) {
 		this.turnFinished = turnFinished;
+	}
+
+	public boolean isGivenTargets() {
+		return givenTargets;
+	}
+
+
+	public void setGivenTargets(boolean givenTargets) {
+		this.givenTargets = givenTargets;
+	}
+
+
+	public boolean isSelectedTarget() {
+		return selectedTarget;
+	}
+
+
+	public void setSelectedTarget(boolean selectedTarget) {
+		this.selectedTarget = selectedTarget;
 	}
 	
 }

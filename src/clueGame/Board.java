@@ -165,7 +165,7 @@ public class Board extends JPanel implements MouseListener {
 		while(in.hasNextLine()) {
 			String inString = in.nextLine();
 			String[] tokens = inString.split(",");
-			ComputerPlayer compPlayer = new ComputerPlayer();
+			ComputerPlayer compPlayer = new ComputerPlayer(this);
 			compPlayer.setName(tokens[0]);
 			number = tokens[1];
 			number2 = tokens[2];
@@ -464,7 +464,7 @@ public class Board extends JPanel implements MouseListener {
 	//Draws the board
 	public void paintComponent(Graphics g) {
 
-		System.out.println(whoseTurn + " " + "human turn finished? = " + humanPlayer.isTurnFinished() ); 
+		System.out.println(whoseTurn + " " + "human turn finished? = " + humanPlayer.isTurnFinished()); 
 		
 		super.paintComponent(g);
 		
@@ -490,7 +490,6 @@ public class Board extends JPanel implements MouseListener {
 		//This draws the possible human targets
 		if (whoseTurn == humanPlayer && !humanPlayer.isTurnFinished()) {
 			System.out.println("highlighting");
-
 			for(BoardCell b : targets){
 				b.drawHighlight(g);
 			}
@@ -510,6 +509,7 @@ public class Board extends JPanel implements MouseListener {
 			for (BoardCell b : targets) {
 				if (mouseRow == b.getRow() && mouseColumn == b.getColumn()) {
 					selectedTarget = true;
+					humanPlayer.setSelectedTarget(true);
 					getHumanPlayer().setTurnFinished(true);
 					humanPlayer.setLocationX(mouseRow);
 					humanPlayer.setLocationY(mouseColumn);
@@ -541,6 +541,7 @@ public class Board extends JPanel implements MouseListener {
 		//If human player has finished turn, set to first computer players turn
 		if (getWhoseTurn() == getHumanPlayer() && getHumanPlayer().isTurnFinished()) {
 			setWhoseTurn(getComputerPlayers().get(0));
+			humanPlayer.setGivenTargets(false);
 		}
 
 	}

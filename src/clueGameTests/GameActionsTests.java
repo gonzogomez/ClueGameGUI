@@ -66,7 +66,7 @@ public class GameActionsTests {
 	//Room Preference Tests
 	@Test
 	public void testTargetRoomPreference(){
-		ComputerPlayer player = new ComputerPlayer();
+		ComputerPlayer player = new ComputerPlayer(board);
 		//Test1
 		board.calcTargets(board.calcIndex(14, 4), 2);
 		int loc_Room = 0;
@@ -113,7 +113,7 @@ public class GameActionsTests {
 	//Random choice tests
 	@Test
 	public void testTargetRandomSelection(){
-		ComputerPlayer player = new ComputerPlayer();
+		ComputerPlayer player = new ComputerPlayer(board);
 		// Pick a location with no rooms in target, just three targets
 		board.calcTargets(board.calcIndex(14, 0), 2);
 		int loc_12_0Tot = 0;
@@ -186,7 +186,7 @@ public class GameActionsTests {
 	//Test a random choice is made when the room is the last visited
 	@Test
 	public void testTargetRandomSelectionRoom(){
-		ComputerPlayer player = new ComputerPlayer();
+		ComputerPlayer player = new ComputerPlayer(board);
 		//Test1
 		// Pick a location with last visited room in target, six targets
 		board.calcTargets(board.calcIndex(4, 4), 2);
@@ -447,19 +447,19 @@ public class GameActionsTests {
 		//Deal card to human player
 		hplayer.getMyCards().add(kitchenCard);
 		//Deal cards to the computer players
-		ComputerPlayer player1 = new ComputerPlayer();
+		ComputerPlayer player1 = new ComputerPlayer(board);
 		player1.getMyCards().add(mustardCard);
 		computers.add(player1);
-		ComputerPlayer player2 = new ComputerPlayer();
+		ComputerPlayer player2 = new ComputerPlayer(board);
 		player2.getMyCards().add(leadPipeCard);
 		computers.add(player2);
-		ComputerPlayer player3 = new ComputerPlayer();
+		ComputerPlayer player3 = new ComputerPlayer(board);
 		player3.getMyCards().add(mrGreenCard);
 		computers.add(player3);
-		ComputerPlayer player4 = new ComputerPlayer();
+		ComputerPlayer player4 = new ComputerPlayer(board);
 		player4.getMyCards().add(knifeCard);
 		computers.add(player4);
-		ComputerPlayer player5 = new ComputerPlayer();
+		ComputerPlayer player5 = new ComputerPlayer(board);
 		player5.getMyCards().add(hallCard);
 		computers.add(player5);
 		
@@ -541,7 +541,7 @@ public class GameActionsTests {
 	
 	@Test
 	public void testMakingSuggestion(){
-		ComputerPlayer player = new ComputerPlayer();
+		ComputerPlayer player = new ComputerPlayer(board);
 		Suggestion testSuggestion = new Suggestion();
 		
 		//Update seen cards
