@@ -53,6 +53,20 @@ public class GameControlPanel extends JPanel {
 		return button;
 	}
 
+	public void updateDisplay(String person, String room, String weapon, Card returnedCard) {
+		System.out.println("Person: " + person);
+		System.out.println("Weapon: " + weapon);
+		System.out.println("Room: " + room);
+		
+		sp.guessPanel.guessBox.setText(person + ", " + room + ", " + weapon);
+		
+		if(returnedCard != null){
+			sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
+		} else {
+			JOptionPane.showMessageDialog(board,"There was no card to be returned", "Message", JOptionPane.INFORMATION_MESSAGE);
+		}
+		repaint();
+	}
 	//Logic for the human's turn
 	public void makeHumanMove(int dieRoll){
 		if (!board.getHumanPlayer().isTurnFinished() && !board.getHumanPlayer().isGivenTargets()){
@@ -84,8 +98,10 @@ public class GameControlPanel extends JPanel {
 			if (currentCompPlayer.isCorrectAnswer()) {
 				endGame();
 			} else {
+				currentCompPlayer.setAccusationFlag(false);
 				JOptionPane.showMessageDialog(board,"The computer player made an incorrect guess of: " + storedSuggestion.getPerson() + ", " + storedSuggestion.getRoom() + ", " + storedSuggestion.getWeapon(), "Message", JOptionPane.INFORMATION_MESSAGE);
 			}
+			
 		}
 
 		//Gets computer players row and column
@@ -117,17 +133,16 @@ public class GameControlPanel extends JPanel {
 				}
 			}
 			
-			if (board.getHumanPlayer().equals(sugg.getPerson())) {
+			if (board.getHumanPlayer().getName().equals(sugg.getPerson())) {
 				board.getHumanPlayer().setLocationX(currentCompPlayer.getLocationX());
 				board.getHumanPlayer().setLocationY(currentCompPlayer.getLocationY());
-				
 			}
 			
 			//Stores the suggestion and sets accusation flag to true so computer makes a guess the next round
 			if (returnedCard == null) {
 				storedSuggestion = sugg;
 				currentCompPlayer.setAccusationFlag(true);
-				sp.guessReturnPanel.guessResultBox.setText("Guess could not be disproved");
+				sp.guessReturnPanel.guessResultBox.setText("No new clue");
 			} else {
 				sp.guessPanel.guessBox.setText(sugg.getPerson() + ", " + sugg.getRoom() + ", " + sugg.getWeapon());
 				sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
@@ -291,10 +306,17 @@ public class GameControlPanel extends JPanel {
 						String selectedPerson = (String) personComboBox.getSelectedItem();
 						String selectedWeapon = (String) weaponComboBox.getSelectedItem();
 						String selectedRoom = (String) roomComboBox.getSelectedItem();
-						boolean correctGuess = board.checkAccusation(selectedPerson, selectedWeapon, selectedRoom);
+						boolean correctGuess = board.checkAccusation(selectedPerson, selectedRoom, selectedWeapon);
 						if(correctGuess == true){
 							endGame();
+						} else {
+							JOptionPane.showMessageDialog(board, "Zas wrong", "Message", JOptionPane.INFORMATION_MESSAGE);
 						}
+						accusationDialog.setVisible(false);
+						board.getHumanPlayer().setSelectedTarget(true);
+						board.getHumanPlayer().setGivenTargets(false);
+						board.getHumanPlayer().setTurnFinished(true);
+						board.setWhoseTurn(board.getComputerPlayers().get(0));
 
 					} else if (e.getSource() == cancel) {
 						accusationDialog.setVisible(false);
@@ -448,8 +470,8 @@ public class GameControlPanel extends JPanel {
 					String selectedPerson = (String) personComboBox.getSelectedItem();
 					String selectedWeapon = (String) weaponComboBox.getSelectedItem();
 					Card returnedCard = board.handleSuggestion(selectedPerson, selectedWeapon, roomLocation.getText());
-					//sp.guessPanel.guessBox.setText(selectedPerson + ", " + roomLocation.getText() + ", " + selectedWeapon);
-					sp.guessPanel.guessBox.setText("Displaying the correct thing!");
+					
+					updateDisplay(selectedPerson, roomLocation.getText(), selectedWeapon, returnedCard);
 					
 					//Moves correct computer player to room where human player made suggestion
 					for (ComputerPlayer cp : board.getComputerPlayers()) {
@@ -459,12 +481,6 @@ public class GameControlPanel extends JPanel {
 						}
 					}
 					
-					if(returnedCard != null){
-						sp.guessReturnPanel.guessResultBox.setText(returnedCard.getName());
-						//getSp().getGuessReturnPanel().getGuessResultBox().setText(returnedCard.getName());
-					} else {
-						JOptionPane.showMessageDialog(board,"There was no card to be returned", "Message", JOptionPane.INFORMATION_MESSAGE);
-					}
 					suggestionDialog.setVisible(false);
 
 				} else if (e.getSource() == cancel) {
@@ -488,7 +504,10 @@ public class GameControlPanel extends JPanel {
 		
 		
 		if (board.getWhoseTurn() == board.getHumanPlayer()) {
-			JOptionPane.showMessageDialog(board,"There was no card to be returned", "Message", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(board,"You Win!", "Message", JOptionPane.INFORMATION_MESSAGE);
+		}
+		else{
+			JOptionPane.showMessageDialog(board,"Computer just won, answer is " + storedSuggestion.getPerson() + ", " + storedSuggestion.getRoom() + ", " + storedSuggestion.getWeapon() , "Message", JOptionPane.INFORMATION_MESSAGE);
 		}
 	}
 

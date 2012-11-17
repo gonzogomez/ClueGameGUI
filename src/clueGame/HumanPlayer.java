@@ -4,6 +4,7 @@ public class HumanPlayer extends Player {
 	private boolean turnFinished;
 	private boolean givenTargets;
 	private boolean selectedTarget;
+	private char lastRoomVisited;
 	private Board board;
 	
 	//Constructor
@@ -59,6 +60,16 @@ public class HumanPlayer extends Player {
 
 	public void setSelectedTarget(boolean selectedTarget) {
 		this.selectedTarget = selectedTarget;
+	}
+
+
+	public char getLastRoomVisited() {
+		return lastRoomVisited;
+	}
+
+
+	public void setLastRoomVisited(char lastRoomVisited) {
+		this.lastRoomVisited = lastRoomVisited;
 	}
 	
 }

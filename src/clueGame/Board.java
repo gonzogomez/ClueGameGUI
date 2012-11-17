@@ -45,7 +45,6 @@ public class Board extends JPanel implements MouseListener {
 	private int numRooms;
 	private int numWeapons;
 	private static final int SIZE = 30;
-	private int compPlayerIndex = 0;
 	
 	//Constructor - Calls loadConfigFiles() method.
 	public Board() {
@@ -58,7 +57,6 @@ public class Board extends JPanel implements MouseListener {
 		cards = new ArrayList<Card>();
 		cardListTest = new ArrayList<Card>();
 		whoseTurn = humanPlayer;
-		compPlayerIndex = 0;
 		solution = new Solution(null, null, null);
 		loadConfigFiles();
 		boardSize = numRows*numColumns;
@@ -312,10 +310,20 @@ public class Board extends JPanel implements MouseListener {
 			if(visitedPoints[i] == false) {
 				visitedPoints[i] = true;
 				path.addLast(i);
-				if(path.size() == numberOfSteps || cells.get(i).isDoorway()) {					
-					BoardCell b = cells.get(i);
-					b.setLocation(i);
-					targets.add(b);
+				if(path.size() == numberOfSteps || cells.get(i).isDoorway()) {	
+					if (cells.get(i).isRoom()){
+						RoomCell rc = (RoomCell) cells.get(i);
+						if (rc.getInitial() != humanPlayer.getLastRoomVisited()) {
+							BoardCell b = cells.get(i);
+							b.setLocation(i);
+							targets.add(b);
+						}
+					}
+					else{
+						BoardCell b = cells.get(i);
+						b.setLocation(i);
+						targets.add(b);
+					}
 				} else {
 					LinkedList<Integer> recursiveList = new LinkedList<Integer>(); 
 					recursiveList = getAdjList(i);
@@ -463,9 +471,6 @@ public class Board extends JPanel implements MouseListener {
 
 	//Draws the board
 	public void paintComponent(Graphics g) {
-
-		System.out.println(whoseTurn + " " + "human turn finished? = " + humanPlayer.isTurnFinished()); 
-		
 		super.paintComponent(g);
 		
 		//Draws all the board cells
@@ -489,7 +494,6 @@ public class Board extends JPanel implements MouseListener {
 		
 		//This draws the possible human targets
 		if (whoseTurn == humanPlayer && !humanPlayer.isTurnFinished()) {
-			System.out.println("highlighting");
 			for(BoardCell b : targets){
 				b.drawHighlight(g);
 			}
@@ -519,11 +523,15 @@ public class Board extends JPanel implements MouseListener {
 					if (bc.isRoom()) {
 						//Takes the room the player is in and presets it in the Suggestion
 						RoomCell rc = (RoomCell) bc;
+						humanPlayer.setLastRoomVisited(rc.getInitial());
 						String roomName = getRooms().get(rc.getInitial());
 						GameControlPanel gcp = new GameControlPanel(this);
 						gcp.getSuggestionDialog().getRoomlocation().setText(roomName);
 						
 						gcp.getSuggestionDialog().setVisible(true);
+					}
+					else{
+						humanPlayer.setLastRoomVisited('Z');
 					}
 				}
 			}
